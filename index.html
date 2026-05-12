@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>Zombie Empire Beta</title>
+<style>
+  :root{--bg:#101915;--panel:#17231e;--panel2:#21352d;--gold:#e9c46a;--green:#7ddc89;--red:#ff6b6b;--blue:#75b6ff;--text:#e8f1ea;--muted:#9fb0a6}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+  html,body{margin:0;height:100%;overflow:hidden;background:#07100d;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;touch-action:none}
+  #game{position:fixed;inset:0;display:flex;flex-direction:column;background:radial-gradient(circle at 50% 10%,#26372f,#09100d 70%)}
+  .topbar{height:74px;padding:8px 10px 6px;display:flex;gap:7px;align-items:center;background:linear-gradient(#17271f,#0d1712);border-bottom:1px solid #31463c;z-index:5}
+  .brand{font-weight:900;letter-spacing:.4px;color:var(--gold);font-size:14px;line-height:1.1;min-width:70px}.phase{font-size:11px;color:var(--muted)}
+  .res{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;width:100%}.pill{background:#0f1a15;border:1px solid #30483d;border-radius:9px;padding:5px;font-size:11px;text-align:center}.pill b{display:block;color:#fff;font-size:12px}
+  .main{position:relative;flex:1;overflow:hidden}
+  canvas{width:100%;height:100%;display:block;touch-action:none;background:#17241e}
+  .hud{position:absolute;inset:0;pointer-events:none}.card{pointer-events:auto;background:rgba(15,24,20,.94);border:1px solid #41594d;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .bottom{position:absolute;left:8px;right:8px;bottom:8px;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;pointer-events:auto}.tab{padding:10px 4px;border-radius:12px;border:1px solid #41594d;background:#14211b;color:#e8f1ea;font-size:11px;font-weight:800}.tab.active{background:#2b4237;color:var(--gold)}
+  .side{position:absolute;right:8px;top:10px;width:48px;display:flex;flex-direction:column;gap:7px;pointer-events:auto}.round{height:44px;border-radius:13px;border:1px solid #4a6356;background:#15241d;color:#fff;font-weight:900}
+  .panel{position:absolute;left:8px;right:8px;bottom:70px;max-height:45%;overflow:auto;padding:12px;display:none;pointer-events:auto}.panel.show{display:block}.panel h2{margin:0 0 6px;font-size:18px;color:var(--gold)}.panel p{margin:5px 0;color:var(--muted);font-size:13px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.btn{border:0;border-radius:10px;background:#2d4d3d;color:#fff;padding:10px 8px;font-weight:800;font-size:12px}.btn:disabled{opacity:.45}.danger{background:#673336}.gold{background:#806827}.blue{background:#2e4d6f}.row{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #2b3e35}.tag{font-size:11px;color:#111;background:var(--gold);border-radius:20px;padding:3px 7px;font-weight:900}.small{font-size:11px;color:var(--muted)}
+  #toast{position:absolute;left:12px;right:12px;top:82px;text-align:center;padding:10px;border-radius:12px;background:rgba(0,0,0,.62);display:none;z-index:9}.report{white-space:pre-line;background:#0b1510;border-radius:12px;padding:10px;font-size:12px;color:#dce9df}
+  .intro{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:22px;background:linear-gradient(160deg,rgba(4,10,7,.95),rgba(26,42,34,.95));z-index:20}.introBox{max-width:430px;padding:20px}.intro h1{font-size:34px;margin:0;color:var(--gold)}.intro p{color:#c4d5ca}.hide{display:none}
+</style>
+</head>
+<body>
+<div id="game">
+  <div class="topbar">
+    <div class="brand">ZOMBIE<br>EMPIRE<div class="phase" id="levelText">Base Lv.1</div></div>
+    <div class="res">
+      <div class="pill">Scrap<b id="scrap">0</b></div><div class="pill">Food<b id="food">0</b></div><div class="pill">Fuel<b id="fuel">0</b></div><div class="pill">Serum<b id="serum">0</b></div>
+    </div>
+  </div>
+  <div class="main">
+    <canvas id="map"></canvas>
+    <div class="hud">
+      <div id="toast"></div>
+      <div class="side"><button class="round" id="homeBtn">⌂</button><button class="round" id="zoomIn">＋</button><button class="round" id="zoomOut">－</button></div>
+      <div class="panel card" id="panel"></div>
+      <div class="bottom"><button class="tab active" data-tab="map">Map</button><button class="tab" data-tab="base">Base</button><button class="tab" data-tab="troops">Troops</button><button class="tab" data-tab="war">War</button><button class="tab" data-tab="report">Report</button></div>
+    </div>
+    <div class="intro" id="intro"><div class="introBox card"><h1>Zombie Empire Beta</h1><p>Browser prototype for Safari/mobile. Build your bunker, train survivors, scout enemies, raid zombie locations, capture the Dead Capital, and test prison/watchtower systems.</p><button class="btn gold" id="startBtn">Start Beta</button><button class="btn" id="resetBtn">Reset Save</button></div></div>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id); const fmt=n=> n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':Math.floor(n);
+let state = JSON.parse(localStorage.getItem('ze_beta_save')||'null') || {base:1, scrap:800, food:600, fuel:250, serum:10, watch:1, prison:0, prisonHeld:null, troops:{scav:55,gun:0,truck:0}, hero:{name:'Rex Gravehand',lvl:1,atk:35}, report:'No battles yet.', captured:false, owned:{}, last:Date.now()};
+const locs=[{id:'home',name:'Your Bunker',x:0,y:0,type:'home'},{id:'cap',name:'Dead Capital',x:920,y:620,type:'capital',buff:'King role after 3h hold'},{id:'oil',name:'Oil Refinery',x:-680,y:400,type:'boost',buff:'+20% fuel raids'},{id:'lab',name:'Bio Lab',x:510,y:-520,type:'boost',buff:'+15% serum finds'},{id:'hospital',name:'Hospital',x:-860,y:-360,type:'boost',buff:'-20% troop losses'},{id:'mil',name:'Military Base',x:220,y:820,type:'boost',buff:'+12% attack'},{id:'air',name:'Airfield',x:1030,y:-120,type:'boost',buff:'+20% march speed'}];
+let enemies=[]; for(let i=0;i<22;i++) enemies.push({id:'e'+i,name:['Iron Vultures','Ash Pack','Rot Kings','Red Talon','Dust Wolves'][i%5]+' '+(i+1),x:Math.cos(i*1.7)*700+Math.sin(i)*500,y:Math.sin(i*1.3)*650+Math.cos(i*.4)*350,power:250+i*140});
+const canvas=$('map'),ctx=canvas.getContext('2d'); let cam={x:0,y:0,z:.55}, drag=null, selected=null;
+function save(){localStorage.setItem('ze_beta_save',JSON.stringify(state));}
+function produce(){let now=Date.now(), mins=Math.min(120,(now-state.last)/60000); if(mins>0){state.scrap+=mins*(8+state.base*2);state.food+=mins*(7+state.base*2);state.fuel+=mins*(2+state.base);state.last=now;save();}}
+function ui(){produce(); $('scrap').textContent=fmt(state.scrap);$('food').textContent=fmt(state.food);$('fuel').textContent=fmt(state.fuel);$('serum').textContent=fmt(state.serum);$('levelText').textContent='Base Lv.'+state.base;}
+function worldToScreen(x,y){return [canvas.width/2+(x-cam.x)*cam.z,canvas.height/2+(y-cam.y)*cam.z]}; function screenToWorld(x,y){return [(x-canvas.width/2)/cam.z+cam.x,(y-canvas.height/2)/cam.z+cam.y]}
+function draw(){canvas.width=innerWidth*devicePixelRatio; canvas.height=(innerHeight-74)*devicePixelRatio; ctx.setTransform(1,0,0,1,0,0); ctx.scale(devicePixelRatio,devicePixelRatio); let W=canvas.width/devicePixelRatio,H=canvas.height/devicePixelRatio; ctx.fillStyle='#17251e';ctx.fillRect(0,0,W,H);
+  // terrain grid
+  for(let gx=-1600;gx<=1600;gx+=160){for(let gy=-1200;gy<=1200;gy+=160){let [sx,sy]=worldToScreen(gx,gy); sx/=devicePixelRatio; sy/=devicePixelRatio; if(sx>-80&&sx<W+80&&sy>-80&&sy<H+80){ctx.strokeStyle='rgba(115,147,118,.12)';ctx.strokeRect(sx,sy,160*cam.z/devicePixelRatio,160*cam.z/devicePixelRatio)}}}
+  // roads
+  ctx.lineWidth=18*cam.z/devicePixelRatio; ctx.strokeStyle='rgba(97,87,63,.55)'; ctx.beginPath(); [[-1100,0],[-500,120],[0,0],[520,160],[1100,620]].forEach((p,i)=>{let s=worldToScreen(p[0],p[1]); s=[s[0]/devicePixelRatio,s[1]/devicePixelRatio]; i?ctx.lineTo(...s):ctx.moveTo(...s)});ctx.stroke();
+  [...locs,...enemies].forEach(o=>{let [sx,sy]=worldToScreen(o.x,o.y); sx/=devicePixelRatio; sy/=devicePixelRatio; if(sx<-80||sy<-80||sx>W+80||sy>H+80)return; let r=o.type==='capital'?30:o.type==='home'?24:o.type==='boost'?22:18; ctx.fillStyle=o.type==='capital'?'#6d2525':o.type==='home'?'#d9bb65':o.type==='boost'?'#386f55':'#5b4b42'; ctx.beginPath();ctx.arc(sx,sy,r,0,7);ctx.fill(); ctx.strokeStyle=selected===o?'#fff':'#0b120e';ctx.lineWidth=3;ctx.stroke(); ctx.fillStyle='#eaf3ec';ctx.font='700 11px system-ui';ctx.textAlign='center';ctx.fillText(o.type==='capital'?'DEAD CAPITAL':o.type==='home'?'YOUR BASE':o.name.split(' ')[0],sx,sy+r+14); if(state.owned[o.id]){ctx.fillStyle='#7ddc89';ctx.fillText('CONTROLLED',sx,sy+r+28)}});
+  requestAnimationFrame(draw)}
+function nearest(x,y){let all=[...locs,...enemies], best=null,bd=60/cam.z; all.forEach(o=>{let d=Math.hypot(o.x-x,o.y-y); if(d<bd){bd=d;best=o}}); return best}
+function toast(t){$('toast').textContent=t;$('toast').style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>$('toast').style.display='none',1800)}
+function spend(s,f,fu,se){if(state.scrap>=s&&state.food>=f&&state.fuel>=fu&&state.serum>=se){state.scrap-=s;state.food-=f;state.fuel-=fu;state.serum-=se;return true}toast('Not enough resources');return false}
+function battle(target){let atk=state.troops.scav*2+state.troops.gun*7+state.troops.truck*22+state.hero.atk*state.hero.lvl; if(state.owned.mil)atk*=1.12; let def=target.power||(target.type==='capital'?2400:900); let win=atk*(.85+Math.random()*.4)>def; let loss=win?.08:.22; if(state.owned.hospital)loss*=.8; state.troops.scav=Math.max(0,Math.floor(state.troops.scav*(1-loss)));state.troops.gun=Math.max(0,Math.floor(state.troops.gun*(1-loss)));state.troops.truck=Math.max(0,Math.floor(state.troops.truck*(1-loss)));
+ if(win){state.scrap+=def*4;state.food+=def*3;state.fuel+=def; if(target.type==='boost'||target.type==='capital')state.owned[target.id]=true; if(target.id&&target.id[0]==='e'&&state.prison>0&&Math.random()<.35)state.prisonHeld=target.name+' Leader';}
+ state.report=`${win?'VICTORY':'DEFEAT'} vs ${target.name}\nYour Power: ${fmt(atk)}\nEnemy Power: ${fmt(def)}\nTroop Losses: ${Math.round(loss*100)}%\nRewards: ${win?fmt(def*4)+' Scrap, '+fmt(def*3)+' Food':'None'}\n${state.prisonHeld?'Prisoner Held: '+state.prisonHeld:''}`; save(); ui(); showPanel('report');}
+function showPanel(tab){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab)); let p=$('panel'); p.classList.add('show'); if(tab==='map'){p.classList.remove('show');return} if(tab==='base')p.innerHTML=`<h2>Your Bunker</h2><p>Upgrade your base, watchtower, and prison.</p><div class="row"><b>Command Bunker Lv.${state.base}</b><button class="btn gold" onclick="upgradeBase()">Upgrade<br><span class=small>${fmt(500*state.base*state.base)} scrap</span></button></div><div class="row"><b>Watchtower Lv.${state.watch}</b><span class=small>Better scout reports</span><button class="btn blue" onclick="upgradeWatch()">Upgrade</button></div><div class="row"><b>Prison Lv.${state.prison}</b><span class=small>${state.prisonHeld||'No prisoner'}</span><button class="btn danger" onclick="upgradePrison()">Upgrade</button></div>`;
+ if(tab==='troops')p.innerHTML=`<h2>Troops</h2><div class="row"><b>Scavengers</b><span>${state.troops.scav}</span><button class="btn" onclick="train('scav')">Train 25</button></div><div class="row"><b>Gunners</b><span>${state.troops.gun}</span><button class="btn" onclick="train('gun')">Train 10</button></div><div class="row"><b>Armored Trucks</b><span>${state.troops.truck}</span><button class="btn" onclick="train('truck')">Build 2</button></div><p>Higher base levels unlock stronger troop tiers later.</p>`;
+ if(tab==='war')p.innerHTML=`<h2>War Map</h2><p>Tap a base or strategic location on the map, then attack or scout it.</p>${selected?`<div class=row><b>${selected.name}</b><span class=tag>${selected.type||'enemy'}</span></div><p>${selected.buff||'Enemy player base'}</p><button class="btn danger" onclick="battle(selected)">Attack</button> <button class="btn blue" onclick="scout()">Scout</button>`:'<p>No target selected.</p>'}`;
+ if(tab==='report')p.innerHTML=`<h2>Battle Report</h2><div class="report">${state.report}</div>`; }
+window.upgradeBase=()=>{let c=500*state.base*state.base;if(spend(c,c*.7,c*.25,0)){state.base++;toast('Base upgraded');save();ui();showPanel('base')}}
+window.upgradeWatch=()=>{let c=300*state.watch*state.watch;if(spend(c,120*state.watch,80*state.watch,0)){state.watch++;toast('Watchtower upgraded');save();showPanel('base')}}
+window.upgradePrison=()=>{let c=700*(state.prison+1);if(spend(c,300,120,0)){state.prison++;toast('Prison upgraded');save();showPanel('base')}}
+window.train=t=>{if(t==='scav'&&spend(80,120,0,0))state.troops.scav+=25; if(t==='gun'&&spend(220,180,40,0))state.troops.gun+=10; if(t==='truck'&&spend(450,120,220,1))state.troops.truck+=2; save();ui();showPanel('troops')}
+window.scout=()=>{if(!selected)return; let info=state.watch<3?'Power estimate: '+fmt(selected.power||900):`Power: ${fmt(selected.power||900)}\nBuff: ${selected.buff||'none'}\nRecommended: ${fmt((selected.power||900)*1.15)} power`; state.report='SCOUT REPORT: '+selected.name+'\n'+info; save();showPanel('report')}
+canvas.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,cx:cam.x,cy:cam.y,moved:false}; canvas.setPointerCapture(e.pointerId)});canvas.addEventListener('pointermove',e=>{if(!drag)return; let dx=(e.clientX-drag.x)/cam.z,dy=(e.clientY-drag.y)/cam.z; if(Math.hypot(dx,dy)>8)drag.moved=true; cam.x=drag.cx-dx;cam.y=drag.cy-dy});canvas.addEventListener('pointerup',e=>{if(drag&&!drag.moved){let [wx,wy]=screenToWorld(e.clientX*devicePixelRatio,e.clientY*devicePixelRatio); selected=nearest(wx,wy); if(selected){toast(selected.name); showPanel('war')}} drag=null});
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>showPanel(b.dataset.tab)); $('homeBtn').onclick=()=>{cam.x=0;cam.y=0}; $('zoomIn').onclick=()=>cam.z=Math.min(1.2,cam.z*1.2); $('zoomOut').onclick=()=>cam.z=Math.max(.28,cam.z/1.2); $('startBtn').onclick=()=>$('intro').classList.add('hide'); $('resetBtn').onclick=()=>{localStorage.removeItem('ze_beta_save');location.reload()};
+setInterval(()=>{ui();save()},3000); ui(); draw();
+</script>
+</body>
+</html>
