@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Zombie Empire - Mobile Strategy RPG Prototype</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+:root{
+  --bg:#0d110d;--panel:#192119;--panel2:#243024;--panel3:#101610;
+  --gold:#d5a44d;--green:#75d17b;--red:#d85a55;--blue:#74cfff;
+  --purple:#bd80ff;--muted:#c7bea4;--text:#f5f0de;--line:#53674e;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html,body{margin:0;height:100%;background:#050705;color:var(--text);font-family:Arial,Helvetica,sans-serif;overflow:hidden}
+button{border:0;border-radius:10px;background:var(--gold);color:#171107;font-weight:900;padding:10px 12px;margin:4px;font-size:12px;cursor:pointer}
+button:active{transform:scale(.97)}
+button.secondary{background:#344232;color:#fff;border:1px solid #5d7359}
+button.danger{background:#b74545;color:white}
+button.good{background:#6fc775;color:#091509}
+button.locked{background:#333;color:#999}
+#app{height:100%;max-width:1100px;margin:auto;display:flex;flex-direction:column;background:#0c120c}
+.topbar{height:68px;background:linear-gradient(#263324,#141c14);border-bottom:2px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);text-align:center;align-items:center;font-size:11px;font-weight:bold}
+.stat b{display:block;font-size:13px;color:#fff}
+.map{flex:1;position:relative;overflow:hidden;background:
+radial-gradient(circle at 50% 45%,rgba(185,45,45,.7) 0 4%,transparent 8%),
+radial-gradient(circle at 20% 25%,rgba(45,80,45,.75) 0 8%,transparent 25%),
+radial-gradient(circle at 80% 70%,rgba(85,70,45,.8) 0 8%,transparent 24%),
+linear-gradient(135deg,#243b2d,#111711 48%,#2d281d)}
+.road{position:absolute;background:rgba(175,155,105,.22);height:15px;border-radius:25px}
+.r1{left:8%;top:48%;width:84%;transform:rotate(3deg)}.r2{left:49%;top:10%;width:15px;height:80%}.r3{left:15%;top:75%;width:70%;transform:rotate(-28deg)}
+.zone{position:absolute;border:1px dashed rgba(255,255,255,.17);border-radius:50%;pointer-events:none}
+.z1{left:5%;top:5%;width:38%;height:38%}.z2{right:5%;top:5%;width:38%;height:38%}.z3{left:31%;top:27%;width:38%;height:38%;border-color:rgba(255,80,80,.4)}
+.node{position:absolute;min-width:72px;min-height:58px;border-radius:15px;border:2px solid #878765;background:#222a22;text-align:center;padding:6px 5px;font-size:10.5px;box-shadow:0 5px 18px rgba(0,0,0,.65);user-select:none}
+.node .icon{font-size:22px;display:block}.node small{color:#d9d0aa}.node strong{font-size:10.5px}
+.player{left:42%;top:73%;border-color:var(--blue);background:#173747}
+.capital{left:40%;top:35%;width:110px;height:88px;border-color:#ff5959;background:#501616}
+.oil{left:10%;top:28%;border-color:#e2b64d}.hospital{left:73%;top:23%;border-color:#7be0a2}
+.lab{left:15%;top:64%;border-color:#75df75}.military{left:73%;top:65%;border-color:#eece78}.airfield{left:43%;top:12%;border-color:#88d9ff}
+.enemy{border-color:#d85d5d;background:#351d1d}.e1{left:8%;top:9%}.e2{left:80%;top:9%}.e3{left:5%;top:82%}.e4{left:80%;top:82%}
+.march{position:absolute;width:9px;height:9px;background:#f7dc75;border-radius:50%;box-shadow:0 0 10px #f7dc75;animation:move 4s infinite linear}
+@keyframes move{0%{left:46%;top:72%}50%{left:49%;top:45%}100%{left:46%;top:72%}}
+.panel{height:342px;background:linear-gradient(#222d22,#111811);border-top:2px solid var(--line);padding:10px;overflow:auto}
+h2{font-size:18px;margin:0 0 4px;color:#f2ca64}h3{font-size:15px;margin:9px 0 5px;color:#fff}
+p{font-size:12.5px;line-height:1.28;margin:5px 0}.muted{color:var(--muted);font-size:11.5px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.card{background:rgba(10,16,10,.95);border:1px solid #40523e;border-radius:12px;padding:8px;margin:6px 0}
+.heroCard{border-color:#735d31;background:linear-gradient(145deg,#151b14,#2a2112)}
+.gear{display:inline-block;background:#172017;border:1px solid #596b52;border-radius:8px;padding:5px;margin:3px;font-size:11px}
+.slot{display:inline-block;border:1px solid #655b82;border-radius:50%;width:24px;height:24px;text-align:center;line-height:22px;margin:2px;background:#171020}
+.bar{height:9px;background:#090c09;border-radius:8px;overflow:hidden;border:1px solid #3b4738}.fill{height:100%;background:linear-gradient(90deg,#6edb6d,#d6a84f)}
+.nav{height:86px;background:#080d08;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:6px}
+.nav button{margin:0;padding:6px 1px;font-size:10px;background:#2b392b;color:#fff;border:1px solid #52674d}
+.nav button.active{background:var(--gold);color:#111}
+.toast{position:absolute;left:50%;transform:translateX(-50%);bottom:430px;background:#0b0e0b;border:1px solid var(--gold);padding:8px 12px;border-radius:18px;font-size:12px;display:none;z-index:10;max-width:90%;text-align:center}
+.badge{display:inline-block;padding:3px 6px;border-radius:20px;background:#314231;border:1px solid #607656;font-size:11px;margin:2px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="stat">🧱 Scrap <b id="scrap"></b></div>
+    <div class="stat">🥫 Food <b id="food"></b></div>
+    <div class="stat">⛽ Fuel <b id="fuel"></b></div>
+    <div class="stat">🧪 Serum <b id="serum"></b></div>
+    <div class="stat">💎 Crystals <b id="crystals"></b></div>
+  </div>
+  <div class="map">
+    <div class="zone z1"></div><div class="zone z2"></div><div class="zone z3"></div>
+    <div class="road r1"></div><div class="road r2"></div><div class="road r3"></div><div class="march"></div>
+    <div class="node capital" data-loc="capital"><span class="icon">☣️</span><strong>Dead Capital</strong><br><small>King Zone</small></div>
+    <div class="node oil" data-loc="oil"><span class="icon">⛽</span><strong>Oil Refinery</strong><br><small>Fuel</small></div>
+    <div class="node hospital" data-loc="hospital"><span class="icon">🏥</span><strong>Hospital</strong><br><small>Healing</small></div>
+    <div class="node lab" data-loc="lab"><span class="icon">🧪</span><strong>Bio Lab</strong><br><small>Mutation</small></div>
+    <div class="node military" data-loc="military"><span class="icon">🎖️</span><strong>Military Base</strong><br><small>Attack</small></div>
+    <div class="node airfield" data-loc="airfield"><span class="icon">🛩️</span><strong>Airfield</strong><br><small>March</small></div>
+    <div class="node player" data-loc="base"><span class="icon">🛡️</span><strong>Your Base</strong><br><small>Manage</small></div>
+    <div class="node enemy e1" data-loc="enemy"><span class="icon">🧟</span><strong>Zombie Nest</strong></div>
+    <div class="node enemy e2" data-loc="enemy"><span class="icon">🏚️</span><strong>Raider Base</strong></div>
+    <div class="node enemy e3" data-loc="enemy"><span class="icon">💀</span><strong>Warlord Camp</strong></div>
+    <div class="node enemy e4" data-loc="enemy"><span class="icon">🔥</span><strong>Burnt Outpost</strong></div>
+    <div class="toast" id="toast"></div>
+  </div>
+  <div class="panel" id="panel"></div>
+  <div class="nav">
+    <button data-tab="base">Base</button>
+    <button data-tab="troops">Troops</button>
+    <button data-tab="heroes">Heroes</button>
+    <button data-tab="gear">Gear</button>
+    <button data-tab="research">Research</button>
+    <button data-tab="war">War</button>
+  </div>
+</div>
+
+<script>
+(function(){
+const heroDefs=[
+ {id:"rex",name:"Rex Gravehand",role:"Tank",icon:"🛡️",ability:"Shield Wall",desc:"+Defense in base defense and rallies.",atk:35,def:70,hp:160},
+ {id:"mara",name:"Mara Vex",role:"Sniper",icon:"🎯",ability:"Headshot",desc:"+Attack and higher capture chance.",atk:80,def:25,hp:90},
+ {id:"doc",name:"Doc Hollow",role:"Healer",icon:"💉",ability:"Field Surgery",desc:"Reduces troop losses after battle.",atk:25,def:45,hp:130},
+ {id:"junk",name:"Junkyard King",role:"Vehicle",icon:"🚚",ability:"War Rig",desc:"+Truck damage and fuel rewards.",atk:60,def:45,hp:120},
+ {id:"pale",name:"The Pale One",role:"Mutant",icon:"☣️",ability:"Toxic Surge",desc:"+Mutant damage and serum rewards.",atk:90,def:55,hp:150}
+];
+const gearDefs=[
+ {id:"helmet",name:"Scrap Helmet",slot:"Head",atk:0,def:20,hp:20},
+ {id:"vest",name:"Riot Vest",slot:"Chest",atk:0,def:35,hp:40},
+ {id:"rifle",name:"Rust Rifle",slot:"Weapon",atk:45,def:0,hp:0},
+ {id:"boots",name:"Runner Boots",slot:"Boots",atk:10,def:5,hp:10},
+ {id:"radio",name:"Command Radio",slot:"Relic",atk:20,def:15,hp:15}
+];
+const crystalDefs=[
+ {id:"red",name:"Red Attack Crystal",icon:"🔴",atk:25,def:0,hp:0},
+ {id:"blue",name:"Blue Defense Crystal",icon:"🔵",atk:0,def:25,hp:0},
+ {id:"green",name:"Green Health Crystal",icon:"🟢",atk:0,def:0,hp:50},
+ {id:"purple",name:"Purple Serum Crystal",icon:"🟣",atk:15,def:15,hp:15}
+];
+const defaultState={
+ scrap:2500,food:2200,fuel:900,serum:120,crystals:80,
+ baseLv:1,watch:1,prison:0,wall:1,barracks:1,garage:1,lab:1,hospital:1,
+ survivors:120,gunners:0,brawlers:0,trucks:0,mutants:0,
+ atk:1,def:1,economy:1,march:1,mutation:0,vehicle:0,
+ heroes:{rex:{level:1,xp:0,owned:true,gear:{},crystals:[]},mara:{level:1,xp:0,owned:true,gear:{},crystals:[]},doc:{level:1,xp:0,owned:false,gear:{},crystals:[]},junk:{level:1,xp:0,owned:false,gear:{},crystals:[]},pale:{level:1,xp:0,owned:false,gear:{},crystals:[]}},
+ selectedHero:"rex",
+ inventory:{helmet:1,vest:1,rifle:1,boots:1,radio:0},
+ crystalInv:{red:1,blue:1,green:1,purple:0},
+ buff:"None",captured:0,wins:0,losses:0,capitalHold:0,king:false,
+ report:"Welcome to Zombie Empire. Build your base, recruit heroes, socket crystals, train troops, and fight for the Dead Capital."
+};
+let s=JSON.parse(localStorage.getItem("ZombieEmpireMobileFullSave")||"null")||defaultState;
+let tab="base";
+function save(){localStorage.setItem("ZombieEmpireMobileFullSave",JSON.stringify(s));top()}
+function top(){["scrap","food","fuel","serum","crystals"].forEach(k=>document.getElementById(k).textContent=fmt(s[k]||0))}
+function fmt(n){if(n>=1e6)return(n/1e6).toFixed(1)+"M";if(n>=1e3)return(n/1e3).toFixed(1)+"K";return Math.floor(n)}
+function toast(m){let t=document.getElementById("toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",1800)}
+function panel(h){document.getElementById("panel").innerHTML=h;bind();document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab))}
+function spend(c){for(let k in c){if((s[k]||0)<c[k]){toast("Need more "+k);return false}}for(let k in c)s[k]-=c[k];return true}
+function ctext(c){return Object.entries(c).map(([k,v])=>fmt(v)+" "+k).join(", ")}
+function heroDef(id){return heroDefs.find(h=>h.id===id)}
+function heroStats(id){
+ let d=heroDef(id), h=s.heroes[id]; let atk=d.atk+h.level*10, def=d.def+h.level*8, hp=d.hp+h.level*25;
+ Object.values(h.gear||{}).forEach(gid=>{let g=gearDefs.find(x=>x.id===gid); if(g){atk+=g.atk;def+=g.def;hp+=g.hp}});
+ (h.crystals||[]).forEach(cid=>{let c=crystalDefs.find(x=>x.id===cid); if(c){atk+=c.atk;def+=c.def;hp+=c.hp}});
+ return {atk,def,hp,power:atk*3+def*2+hp};
+}
+function heroPower(){let total=0;Object.keys(s.heroes).forEach(id=>{if(s.heroes[id].owned)total+=heroStats(id).power});return Math.floor(total)}
+function armyPower(){return Math.floor(s.survivors*2+s.gunners*8+s.brawlers*10+s.trucks*48+s.mutants*95+s.baseLv*85+s.atk*150+s.def*110+s.wall*55+heroPower())}
+function maxMarch(){return 5000+s.baseLv*2500+s.march*4500+s.watch*900+Math.floor(heroPower()/50)}
+function upgradeCost(base,mult,l,extra={}){let c={scrap:Math.floor(base*Math.pow(mult,l-1))};Object.assign(c,extra);return c}
+
+function baseScreen(){tab="base";let bunker=upgradeCost(450,1.55,s.baseLv,{food:Math.floor(250*Math.pow(1.45,s.baseLv-1))});panel(`<h2>🏰 Zombie Empire Base</h2>
+<div class="grid2">
+<div class="card"><b>Command Bunker</b><p>Lv ${s.baseLv}/20</p><div class="bar"><div class="fill" style="width:${s.baseLv*5}%"></div></div></div>
+<div class="card"><b>Total Power</b><p>${fmt(armyPower())}</p><p class="muted">Max March ${fmt(maxMarch())}</p></div>
+<div class="card"><b>Watchtower</b><p>Lv ${s.watch}</p><p class="muted">Scouts incoming attacks.</p></div>
+<div class="card"><b>Prison</b><p>Lv ${s.prison}</p><p class="muted">Captured leaders: ${s.captured}</p></div>
+</div>
+<h3>Buildings</h3>
+<button data-a="upgradeBase">Upgrade Bunker<br>${ctext(bunker)}</button>
+<button data-a="upgradeWatch">Watchtower<br>${ctext(upgradeCost(260,1.42,s.watch))}</button>
+<button data-a="upgradePrison">Prison<br>${ctext(upgradeCost(300,1.5,Math.max(1,s.prison+1),{fuel:80+s.prison*45}))}</button>
+<button data-a="upgradeWall">Wall<br>${ctext(upgradeCost(220,1.4,s.wall))}</button>
+<button data-a="upgradeBarracks">Barracks<br>${ctext(upgradeCost(240,1.38,s.barracks))}</button>
+<button data-a="upgradeGarage">Garage<br>${ctext(upgradeCost(300,1.42,s.garage,{fuel:90*s.garage}))}</button>
+<p class="muted">This prototype saves automatically on this browser.</p>`)}
+function troopsScreen(){tab="troops";panel(`<h2>🪖 Troop Design & Training</h2>
+<div class="grid2">
+<div class="card">T1 Scavengers <b>${s.survivors}</b><p class="muted">Hoodies, pipe weapons, fast training.</p></div>
+<div class="card">T2 Gunners <b>${s.gunners}</b><p class="muted">Rifles, tactical masks, ranged damage.</p></div>
+<div class="card">T2 Brawlers <b>${s.brawlers}</b><p class="muted">Riot shields, armor, base defense.</p></div>
+<div class="card">Vehicles <b>${s.trucks}</b><p class="muted">Armored trucks and war rigs.</p></div>
+<div class="card">Mutants <b>${s.mutants}</b><p class="muted">Serum-powered late-game units.</p></div>
+<div class="card">Army Power <b>${fmt(armyPower())}</b><p class="muted">March ${fmt(maxMarch())}</p></div>
+</div>
+<button data-a="trainSurvivors">Train 100 Scavengers<br>250 food</button>
+<button data-a="trainGunners">Train 40 Gunners<br>260 food, 220 scrap</button>
+<button data-a="trainBrawlers">Train 40 Brawlers<br>240 food, 260 scrap</button>
+<button data-a="trainTrucks">Build 10 Trucks<br>650 scrap, 300 fuel</button>
+<button data-a="trainMutants">Grow 5 Mutants<br>180 serum, 800 food</button>`)}
+function heroesScreen(){tab="heroes";let cards=heroDefs.map(d=>{let h=s.heroes[d.id];let st=heroStats(d.id);return `<div class="card heroCard"><b>${d.icon} ${d.name}</b> <span class="badge">${d.role}</span><p>${d.ability}: ${d.desc}</p><p>Lv ${h.level} | ATK ${st.atk} DEF ${st.def} HP ${st.hp}</p>${h.owned?`<button data-a="selectHero" data-id="${d.id}">Select</button><button data-a="levelHero" data-id="${d.id}">Level Up<br>${ctext({serum:30*h.level,food:250*h.level})}</button>`:`<button data-a="unlockHero" data-id="${d.id}">Recruit<br>${ctext({crystals:60,serum:60})}</button>`}</div>`}).join("");panel(`<h2>⭐ Heroes & Abilities</h2><p>Selected Hero: <b>${heroDef(s.selectedHero).name}</b></p>${cards}`)}
+function gearScreen(){tab="gear";let id=s.selectedHero,h=s.heroes[id],d=heroDef(id),st=heroStats(id);let gearHtml=["Head","Chest","Weapon","Boots","Relic"].map(slot=>{let equipped=Object.values(h.gear||{}).find(gid=>gearDefs.find(g=>g.id===gid).slot===slot);return `<div class="card"><b>${slot}</b><p>${equipped?gearDefs.find(g=>g.id===equipped).name:"Empty"}</p>${gearDefs.filter(g=>g.slot===slot).map(g=>`<button data-a="equipGear" data-id="${g.id}">Equip ${g.name}</button>`).join("")}</div>`}).join("");let crystals=(h.crystals||[]).map(cid=>crystalDefs.find(c=>c.id===cid).icon).join("")||"Empty";let inv=crystalDefs.map(c=>`<button data-a="socketCrystal" data-id="${c.id}">${c.icon} Socket ${c.name}<br>Owned ${s.crystalInv[c.id]||0}</button>`).join("");panel(`<h2>⚔️ Hero Gear & Crystal Slots</h2>
+<div class="card heroCard"><b>${d.icon} ${d.name}</b><p>ATK ${st.atk} DEF ${st.def} HP ${st.hp} | Power ${fmt(st.power)}</p><p>Crystal Slots: <span class="slot">${crystals}</span></p></div>
+<h3>Gear Slots</h3>${gearHtml}
+<h3>Crystals</h3><p class="muted">Each hero can hold 3 crystals.</p>${inv}
+<button data-a="craftGear">Craft Random Gear<br>${ctext({scrap:500,crystals:20})}</button>
+<button data-a="buyCrystal">Find Random Crystal<br>${ctext({crystals:30})}</button>`)}
+function researchScreen(){tab="research";panel(`<h2>🧠 Research Tree</h2><div class="grid2">
+<div class="card">Military Attack Lv ${s.atk}</div><div class="card">Defense Lv ${s.def}</div>
+<div class="card">Economy Lv ${s.economy}</div><div class="card">March Size Lv ${s.march}</div>
+<div class="card">Mutation Lv ${s.mutation}</div><div class="card">Vehicle Tech Lv ${s.vehicle}</div>
+</div>
+<button data-a="researchAtk">Military Attack<br>${ctext({scrap:350*s.atk,serum:15*s.atk})}</button>
+<button data-a="researchDef">Defense<br>${ctext({scrap:300*s.def,food:260*s.def})}</button>
+<button data-a="researchEco">Economy<br>${ctext({scrap:250*s.economy,fuel:80*s.economy})}</button>
+<button data-a="researchMarch">March Size<br>${ctext({scrap:400*s.march,fuel:120*s.march})}</button>
+<button data-a="researchMutation">Mutation Tech<br>${ctext({serum:90+40*s.mutation,food:700})}</button>
+<button data-a="researchVehicle">Vehicle Tech<br>${ctext({scrap:500+s.vehicle*200,fuel:250+s.vehicle*100})}</button>`)}
+function warScreen(){tab="war";panel(`<h2>🗺️ Open World War Map</h2>
+<div class="card"><b>Dead Capital</b><p>Hold Progress: ${s.capitalHold}/180 minutes</p><p>${s.king?"👑 You are King of the Region":"Hold it for 3 hours to become King."}</p></div>
+<div class="grid2"><div class="card">Current Buff<br><b>${s.buff}</b></div><div class="card">Battle Record<br><b>${s.wins}W / ${s.losses}L</b></div></div>
+<button data-a="raidEnemy">Raid Enemy Base</button>
+<button data-a="fightZombies">Clear Zombie Nest</button>
+<button data-a="attackCapital">Attack Dead Capital</button>
+<button data-a="gather">Gather Resources</button>
+<button data-a="report">Battle Report</button>
+<button class="danger" data-a="reset">Reset Save</button>
+<div class="card"><b>Latest Report</b><p>${s.report}</p></div>`)}
+function reportScreen(){tab="war";warScreen()}
+
+function battle(type){
+ let p=armyPower(), enemy=type==="capital"?2500+s.baseLv*300+Math.random()*1400:type==="zombie"?600+s.baseLv*110+Math.random()*800:900+s.baseLv*150+Math.random()*1000;
+ if(s.buff.includes("Military"))p*=1.15;if(s.buff.includes("Airfield"))p*=1.05;if(s.selectedHero==="mara")p*=1.07;if(s.selectedHero==="rex"&&type==="capital")p*=1.08;if(s.selectedHero==="junk")p+=s.trucks*20;if(s.selectedHero==="pale")p+=s.mutants*30;
+ p=Math.floor(p);enemy=Math.floor(enemy);
+ if(p>=enemy){
+   s.wins++;let rs=Math.floor(300+Math.random()*600+s.economy*90),rf=Math.floor(260+Math.random()*500+s.economy*75),fl=Math.floor(80+Math.random()*180),se=type==="zombie"?Math.floor(20+Math.random()*40):Math.floor(Math.random()*20),cr=Math.floor(5+Math.random()*20);
+   if(s.selectedHero==="junk")fl+=80;if(s.selectedHero==="pale")se+=30;
+   s.scrap+=rs;s.food+=rf;s.fuel+=fl;s.serum+=se;s.crystals+=cr;
+   let cap=s.prison>0&&type==="enemy"&&Math.random()<Math.min(.18+s.prison*.06+(s.selectedHero==="mara"?.08:0),.7);if(cap)s.captured++;
+   if(type==="capital"){s.capitalHold+=30+s.watch*5;if(s.capitalHold>=180){s.king=true;s.capitalHold=180}}
+   s.report=`Victory! Power ${fmt(p)} beat ${fmt(enemy)}. Loot: ${rs} Scrap, ${rf} Food, ${fl} Fuel, ${se} Serum, ${cr} Crystals.${cap?" Captured enemy leader.":""}${s.king?" You are King of the Region!":""}`;
+ }else{
+   s.losses++;let loss= s.selectedHero==="doc"?0.65:1;
+   s.survivors=Math.max(0,s.survivors-Math.floor(40*loss));s.gunners=Math.max(0,s.gunners-Math.floor(14*loss));s.brawlers=Math.max(0,s.brawlers-Math.floor(14*loss));s.trucks=Math.max(0,s.trucks-Math.floor(3*loss));s.mutants=Math.max(0,s.mutants-Math.floor(1*loss));
+   s.report=`Defeat. Power ${fmt(p)} lost to ${fmt(enemy)}. Train more troops, upgrade heroes, and socket crystals.`;
+ }
+ save();warScreen()
+}
+function action(a,id){
+ if(a==="upgradeBase"){let c=upgradeCost(450,1.55,s.baseLv,{food:Math.floor(250*Math.pow(1.45,s.baseLv-1))});if(s.baseLv>=20)return toast("Base maxed");if(spend(c)){s.baseLv++;s.report="Base upgraded to Lv "+s.baseLv;save();baseScreen()}}
+ if(a==="upgradeWatch"){let c=upgradeCost(260,1.42,s.watch);if(spend(c)){s.watch++;save();baseScreen()}}
+ if(a==="upgradePrison"){let c=upgradeCost(300,1.5,Math.max(1,s.prison+1),{fuel:80+s.prison*45});if(spend(c)){s.prison++;save();baseScreen()}}
+ if(a==="upgradeWall"){let c=upgradeCost(220,1.4,s.wall);if(spend(c)){s.wall++;save();baseScreen()}}
+ if(a==="upgradeBarracks"){let c=upgradeCost(240,1.38,s.barracks);if(spend(c)){s.barracks++;save();baseScreen()}}
+ if(a==="upgradeGarage"){let c=upgradeCost(300,1.42,s.garage,{fuel:90*s.garage});if(spend(c)){s.garage++;save();baseScreen()}}
+ if(a==="trainSurvivors"){if(spend({food:250})){s.survivors+=100+s.barracks*10;save();troopsScreen()}}
+ if(a==="trainGunners"){if(s.barracks<2)return toast("Need Barracks Lv 2");if(spend({food:260,scrap:220})){s.gunners+=40;save();troopsScreen()}}
+ if(a==="trainBrawlers"){if(s.barracks<3)return toast("Need Barracks Lv 3");if(spend({food:240,scrap:260})){s.brawlers+=40;save();troopsScreen()}}
+ if(a==="trainTrucks"){if(s.garage<2)return toast("Need Garage Lv 2");if(spend({scrap:650,fuel:300})){s.trucks+=10+s.vehicle*2;save();troopsScreen()}}
+ if(a==="trainMutants"){if(s.mutation<1)return toast("Research Mutation first");if(spend({serum:180,food:800})){s.mutants+=5+s.mutation;save();troopsScreen()}}
+ if(a==="unlockHero"){if(spend({crystals:60,serum:60})){s.heroes[id].owned=true;s.selectedHero=id;s.report="Recruited "+heroDef(id).name;save();heroesScreen()}}
+ if(a==="selectHero"){if(s.heroes[id].owned){s.selectedHero=id;toast("Selected "+heroDef(id).name);save();heroesScreen()}}
+ if(a==="levelHero"){let h=s.heroes[id],c={serum:30*h.level,food:250*h.level};if(spend(c)){h.level++;save();heroesScreen()}}
+ if(a==="equipGear"){let g=gearDefs.find(x=>x.id===id),h=s.heroes[s.selectedHero];if((s.inventory[id]||0)<=0)return toast("You do not own this gear");h.gear[g.slot]=id;save();gearScreen()}
+ if(a==="socketCrystal"){let h=s.heroes[s.selectedHero];if((s.crystalInv[id]||0)<=0)return toast("No crystal owned");if((h.crystals||[]).length>=3)return toast("Crystal slots full");h.crystals.push(id);s.crystalInv[id]--;save();gearScreen()}
+ if(a==="craftGear"){if(spend({scrap:500,crystals:20})){let g=gearDefs[Math.floor(Math.random()*gearDefs.length)];s.inventory[g.id]=(s.inventory[g.id]||0)+1;toast("Crafted "+g.name);save();gearScreen()}}
+ if(a==="buyCrystal"){if(spend({crystals:30})){let c=crystalDefs[Math.floor(Math.random()*crystalDefs.length)];s.crystalInv[c.id]=(s.crystalInv[c.id]||0)+1;toast("Found "+c.name);save();gearScreen()}}
+ if(a==="researchAtk"){if(spend({scrap:350*s.atk,serum:15*s.atk})){s.atk++;save();researchScreen()}}
+ if(a==="researchDef"){if(spend({scrap:300*s.def,food:260*s.def})){s.def++;save();researchScreen()}}
+ if(a==="researchEco"){if(spend({scrap:250*s.economy,fuel:80*s.economy})){s.economy++;save();researchScreen()}}
+ if(a==="researchMarch"){if(spend({scrap:400*s.march,fuel:120*s.march})){s.march++;save();researchScreen()}}
+ if(a==="researchMutation"){if(spend({serum:90+40*s.mutation,food:700})){s.mutation++;save();researchScreen()}}
+ if(a==="researchVehicle"){if(spend({scrap:500+s.vehicle*200,fuel:250+s.vehicle*100})){s.vehicle++;save();researchScreen()}}
+ if(a==="raidEnemy")battle("enemy"); if(a==="fightZombies")battle("zombie"); if(a==="attackCapital")battle("capital");
+ if(a==="gather"){let rs=500*s.economy,rf=430*s.economy,fl=140*s.economy;s.scrap+=rs;s.food+=rf;s.fuel+=fl;s.report=`Gathered ${rs} Scrap, ${rf} Food, ${fl} Fuel.`;save();warScreen()}
+ if(a==="report")warScreen();
+ if(a==="reset"){if(confirm("Reset Zombie Empire save?")){localStorage.removeItem("ZombieEmpireMobileFullSave");location.reload()}}
+}
+function loc(l){
+ if(l==="base")return baseScreen(); if(l==="enemy")return battle("enemy"); if(l==="capital")return battle("capital");
+ if(l==="oil"){s.fuel+=400*s.economy;s.buff="Oil Refinery Boost";s.report="Oil Refinery captured. Fuel gained and fuel boost activated.";save();warScreen()}
+ if(l==="hospital"){s.buff="Hospital Healing Boost";s.report="Hospital secured. Future troop losses are easier to recover.";save();warScreen()}
+ if(l==="lab"){s.serum+=70;s.buff="Bio Lab Serum Boost";s.report="Bio Lab secured. Serum recovered.";save();warScreen()}
+ if(l==="military"){s.buff="Military Attack Boost";s.report="Military Base captured. Your attacks are boosted.";save();warScreen()}
+ if(l==="airfield"){s.buff="Airfield March Boost";s.report="Airfield captured. March power and movement are boosted.";save();warScreen()}
+}
+function bind(){document.querySelectorAll("[data-a]").forEach(e=>{e.onclick=x=>{x.preventDefault();action(e.dataset.a,e.dataset.id)};e.ontouchend=x=>{x.preventDefault();action(e.dataset.a,e.dataset.id)}})}
+const screens={base:baseScreen,troops:troopsScreen,heroes:heroesScreen,gear:gearScreen,research:researchScreen,war:warScreen};
+document.querySelectorAll(".nav button").forEach(b=>{b.onclick=e=>{e.preventDefault();screens[b.dataset.tab]()};b.ontouchend=e=>{e.preventDefault();screens[b.dataset.tab]()}});
+document.querySelectorAll(".node").forEach(n=>{n.onclick=e=>{e.preventDefault();loc(n.dataset.loc)};n.ontouchend=e=>{e.preventDefault();loc(n.dataset.loc)}});
+top();baseScreen();save();
+})();
+</script>
+</body>
+</html>
