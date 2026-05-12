@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Zombie Empire Beta - Safari Playable</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+body{margin:0;background:#121714;color:#f4f1e8;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
+#game{width:100vw;height:100vh;display:flex;flex-direction:column}
+.top{height:70px;background:#1e2a22;border-bottom:3px solid #6b7b47;display:flex;align-items:center;justify-content:space-around;font-weight:bold;font-size:13px}
+.map{flex:1;position:relative;background:
+radial-gradient(circle at 50% 45%, #5b2a25 0 5%, transparent 8%),
+linear-gradient(135deg,#263b2d,#171d19 45%,#2b241b);
+overflow:hidden}
+.node{position:absolute;border-radius:14px;border:2px solid #e0c16b;background:#242b25;padding:7px 9px;text-align:center;font-size:12px;box-shadow:0 4px 12px #000}
+.base{border-color:#79d17a;background:#203829}
+.enemy{border-color:#d96464;background:#382020}
+.capital{left:42%;top:37%;width:95px;height:78px;border-color:#ff4d4d;background:#4b1717;font-size:12px}
+.oil{left:15%;top:30%}.hospital{left:69%;top:26%}.lab{left:18%;top:64%}.military{left:70%;top:63%}
+.player{left:40%;top:70%;width:100px;border-color:#7ad7ff;background:#183442}
+.panel{height:240px;background:#20251f;border-top:3px solid #6b7b47;padding:10px;overflow:auto}
+h2{font-size:18px;margin:0 0 6px;color:#f5d06a}
+p{margin:5px 0;font-size:14px;line-height:1.25}
+button,.bigbtn{display:inline-block;margin:5px 4px;padding:12px 14px;border:0;border-radius:9px;background:#c89438;color:#101010;font-weight:bold;font-size:14px;text-decoration:none;cursor:pointer}
+button:active,.bigbtn:active{transform:scale(.97);background:#ffd06a}
+.nav{height:74px;background:#101410;border-top:2px solid #3a4b38;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:8px}
+.nav button{margin:0;font-size:13px;background:#2f4132;color:#fff;border:1px solid #6b7b47}
+.nav button.active{background:#c89438;color:#111}
+.small{font-size:12px;color:#c9c3aa}
+</style>
+</head>
+<body>
+<div id="game">
+  <div class="top">
+    <div>🧱 Scrap: <span id="scrap">1000</span></div>
+    <div>🥫 Food: <span id="food">850</span></div>
+    <div>⛽ Fuel: <span id="fuel">300</span></div>
+    <div>🏰 Base Lv <span id="baseLv">1</span></div>
+  </div>
+  <div class="map" id="map">
+    <div class="node capital" data-action="capital">☣️<br><b>Dead Capital</b><br><span class="small">King Event</span></div>
+    <div class="node oil" data-action="oil">⛽ Oil Refinery<br><span class="small">Fuel Boost</span></div>
+    <div class="node hospital" data-action="hospital">🏥 Hospital<br><span class="small">Healing Boost</span></div>
+    <div class="node lab" data-action="lab">🧪 Bio Lab<br><span class="small">Mutation Tech</span></div>
+    <div class="node military" data-action="military">🎖️ Military Base<br><span class="small">Troop Boost</span></div>
+    <div class="node player base" data-action="base">🛡️ Your Base<br><span class="small">Tap to manage</span></div>
+    <div class="node enemy" style="left:7%;top:12%" data-action="enemy">Enemy Camp</div>
+    <div class="node enemy" style="left:80%;top:12%" data-action="enemy">Raider Base</div>
+    <div class="node enemy" style="left:8%;top:78%" data-action="enemy">Zombie Nest</div>
+    <div class="node enemy" style="left:78%;top:78%" data-action="enemy">Warlord Camp</div>
+  </div>
+  <div class="panel" id="panel"></div>
+  <div class="nav">
+    <button id="btnBase">Base</button>
+    <button id="btnTroops">Troops</button>
+    <button id="btnWar">War Map</button>
+    <button id="btnReport">Report</button>
+  </div>
+</div>
+
+<script>
+(function(){
+let state = JSON.parse(localStorage.getItem("ZE_SAVE_V3")||"null") || {
+ scrap:1000, food:850, fuel:300, baseLv:1, watchtower:1, prison:0,
+ survivors:50, gunners:0, trucks:0, captured:0, last:"Welcome Commander. Zombie Empire Beta is ready."
+};
+function save(){localStorage.setItem("ZE_SAVE_V3",JSON.stringify(state));renderTop();}
+function renderTop(){
+ document.getElementById("scrap").textContent=state.scrap;
+ document.getElementById("food").textContent=state.food;
+ document.getElementById("fuel").textContent=state.fuel;
+ document.getElementById("baseLv").textContent=state.baseLv;
+}
+function panel(html){document.getElementById("panel").innerHTML=html;bindPanel();}
+function cost(base,mult){return Math.floor(base*Math.pow(mult,state.baseLv-1));}
+function baseScreen(){
+ let c=cost(300,1.45);
+ panel(`<h2>🏰 Command Bunker</h2>
+ <p>Upgrade your base to unlock stronger troops, better defenses, prison upgrades, and larger marches.</p>
+ <p><b>Base Level:</b> ${state.baseLv}/20</p>
+ <p><b>Watchtower:</b> Lv ${state.watchtower} &nbsp; <b>Prison:</b> Lv ${state.prison}</p>
+ <button data-click="upgradeBase">Upgrade Base (${c} Scrap)</button>
+ <button data-click="upgradeWatch">Upgrade Watchtower (${180+state.watchtower*120} Scrap)</button>
+ <button data-click="upgradePrison">Upgrade Prison (${250+state.prison*160} Scrap)</button>
+ <p class="small">Tip: Prison level 1 lets you capture enemy leaders after winning raids.</p>`);
+}
+function troopsScreen(){
+ panel(`<h2>🪖 Troop Training</h2>
+ <p>Survivors: <b>${state.survivors}</b></p>
+ <p>Gunners: <b>${state.gunners}</b></p>
+ <p>Armored Trucks: <b>${state.trucks}</b></p>
+ <button data-click="trainSurvivors">Train 25 Survivors<br>100 Food</button>
+ <button data-click="trainGunners">Train 10 Gunners<br>120 Food + 80 Scrap</button>
+ <button data-click="trainTrucks">Build 2 Trucks<br>160 Scrap + 80 Fuel</button>`);
+}
+function warScreen(){
+ panel(`<h2>🗺️ World Map</h2>
+ <p>Tap locations on the map or use these quick actions.</p>
+ <button data-click="raid">Raid Enemy Camp</button>
+ <button data-click="capital">Scout Dead Capital</button>
+ <button data-click="claimOil">Claim Oil Refinery</button>
+ <button data-click="saveGame">Save Game</button>
+ <button data-click="resetGame">Reset Beta</button>
+ <p class="small">Battle power is based on troops, base level, watchtower, and prison systems.</p>`);
+}
+function reportScreen(){
+ panel(`<h2>📜 Latest Report</h2>
+ <p>${state.last}</p>
+ <p><b>Captured Leaders:</b> ${state.captured}</p>
+ <p><b>Current Power:</b> ${power()}</p>`);
+}
+function power(){return state.survivors*2+state.gunners*8+state.trucks*45+state.baseLv*60+state.watchtower*30;}
+function doAction(a){
+ if(a==="upgradeBase"){
+   let c=cost(300,1.45); if(state.scrap>=c && state.baseLv<20){state.scrap-=c;state.baseLv++;state.last="Base upgraded to level "+state.baseLv+"."; save(); baseScreen();} else alert("Need more scrap or max level reached.");
+ }
+ if(a==="upgradeWatch"){
+   let c=180+state.watchtower*120; if(state.scrap>=c){state.scrap-=c;state.watchtower++;state.last="Watchtower upgraded to level "+state.watchtower+"."; save(); baseScreen();} else alert("Need more scrap.");
+ }
+ if(a==="upgradePrison"){
+   let c=250+state.prison*160; if(state.scrap>=c){state.scrap-=c;state.prison++;state.last="Prison upgraded to level "+state.prison+". Enemy leaders can now be captured."; save(); baseScreen();} else alert("Need more scrap.");
+ }
+ if(a==="trainSurvivors"){ if(state.food>=100){state.food-=100;state.survivors+=25;state.last="Trained 25 Survivors.";save();troopsScreen();}else alert("Need more food.");}
+ if(a==="trainGunners"){ if(state.food>=120&&state.scrap>=80){state.food-=120;state.scrap-=80;state.gunners+=10;state.last="Trained 10 Gunners.";save();troopsScreen();}else alert("Need more food/scrap.");}
+ if(a==="trainTrucks"){ if(state.scrap>=160&&state.fuel>=80){state.scrap-=160;state.fuel-=80;state.trucks+=2;state.last="Built 2 Armored Trucks.";save();troopsScreen();}else alert("Need more scrap/fuel.");}
+ if(a==="raid"||a==="enemy"){
+   let enemy=250+Math.floor(Math.random()*700)+state.baseLv*40;
+   let p=power();
+   if(p>=enemy){
+     let rs=150+Math.floor(Math.random()*300), rf=100+Math.floor(Math.random()*250), fuel=30+Math.floor(Math.random()*90);
+     state.scrap+=rs;state.food+=rf;state.fuel+=fuel;
+     let cap = state.prison>0 && Math.random()<0.35;
+     if(cap){state.captured++;}
+     state.last=`Victory! Your power ${p} beat enemy power ${enemy}. Loot gained: ${rs} Scrap, ${rf} Food, ${fuel} Fuel.${cap?" Enemy leader captured in your Prison!":""}`;
+   } else {
+     state.survivors=Math.max(0,state.survivors-15);
+     state.gunners=Math.max(0,state.gunners-4);
+     state.last=`Defeat. Your power ${p} lost to enemy power ${enemy}. Some troops were wounded. Upgrade and train more troops.`;
+   }
+   save(); reportScreen();
+ }
+ if(a==="capital"){
+   state.last="Dead Capital scouted: Hold the center for 3 hours to become King of the Region. Current beta uses AI defenders only.";
+   save(); reportScreen();
+ }
+ if(a==="claimOil"||a==="oil"){state.fuel+=100;state.last="Oil Refinery secured for a temporary fuel boost. +100 Fuel.";save();reportScreen();}
+ if(a==="hospital"){state.last="Hospital grants faster healing in the full game. Beta note added to report.";save();reportScreen();}
+ if(a==="lab"){state.last="Bio Lab unlocks mutation research in the full game. Beta note added to report.";save();reportScreen();}
+ if(a==="military"){state.last="Military Base gives troop attack boosts in the full game. Beta note added to report.";save();reportScreen();}
+ if(a==="base"){baseScreen();}
+ if(a==="saveGame"){save();alert("Game saved.");}
+ if(a==="resetGame"){localStorage.removeItem("ZE_SAVE_V3");location.reload();}
+}
+function bindPanel(){
+ document.querySelectorAll("[data-click]").forEach(el=>{
+   el.onclick=function(e){e.preventDefault();doAction(this.getAttribute("data-click"));};
+   el.ontouchend=function(e){e.preventDefault();doAction(this.getAttribute("data-click"));};
+ });
+}
+function bind(id,fn){let e=document.getElementById(id); e.onclick=fn; e.ontouchend=function(ev){ev.preventDefault();fn();};}
+bind("btnBase",baseScreen); bind("btnTroops",troopsScreen); bind("btnWar",warScreen); bind("btnReport",reportScreen);
+document.querySelectorAll(".node").forEach(el=>{
+ el.onclick=function(){doAction(this.getAttribute("data-action"));};
+ el.ontouchend=function(e){e.preventDefault();doAction(this.getAttribute("data-action"));};
+});
+renderTop(); baseScreen();
+})();
+</script>
+</body>
+</html>
